@@ -7,7 +7,7 @@
 [quill]
 id = "morrow"
 name = "Morrow"
-version = "1.0.0"
+version = "1.1.0"
 summary = "Your own assistant, on your own cloud: ask it about anything you can see here, and have it build Quills of your own. An administrator connects Claude once, for everybody."
 category = "personal"
 icon = "robot"
@@ -30,21 +30,22 @@ features = [
 datamodels = []
 
 # -- screens -------------------------------------------------------------------------
-# The conversation: yours down the left, the open one on the right with a
-# box to write in. ?conversation= opens one.
+# The conversation: yours down the left, the open one on the right as a chat,
+# the box to write in on the floor. ?conversation= opens one.
 [[screens]]
 id = "chat"
 icon = "speech"
 label = "Morrow"
 view = "chat"
 model = "morrow.conversation"
+compose = { action = "start", label = "New conversation" }
 
-# What Morrow may do for you: read, or change things too. Behind the gear
-# beside the title, never a tab.
+# Your settings: whether Morrow may change things for you. Behind the gear
+# beside the title, never a tab, never a button on the conversation.
 [[screens]]
 id = "mine"
 icon = "gear"
-label = "What Morrow may do"
+label = "Settings"
 view = "mine"
 model = "morrow.preference"
 settings = true
@@ -100,9 +101,11 @@ confirm = "Delete this conversation? Morrow will not remember it."
 tone = "danger"
 description = "Deletes the conversation and everything said in it."
 
+# The switch on the settings screen: marked settings, so it is on no bar.
 [[actions]]
 id = "allow"
 label = "What Morrow may do"
+settings = true
 description = "Reading only, or changing things for you too: records made, changed and deleted, and a Quill's actions pressed, as you."
 [actions.fields]
 changes = { kind = "bool", label = "Morrow may change things for me" }
