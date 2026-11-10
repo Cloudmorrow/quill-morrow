@@ -93,7 +93,7 @@ def test_connecting_tries_the_key_once_and_keeps_it_for_morrows_code_alone(q, cl
     assert q.get(SETTINGS, found[0].id)["key"] is None
     assert "Claude Opus 5.5" in q.view("settings").text()
     # Everybody on the server has Morrow now.
-    assert [f["action"] for f in q.as_user("sam").view("chat").find("form")] == ["start"]
+    assert [c["ask"] for c in q.as_user("sam").view("chat").find("conversation")] == ["start"]
 
 
 def test_a_key_anthropic_does_not_take_is_not_kept(q, claude):
@@ -144,10 +144,19 @@ def test_a_turn_looks_things_up_as_the_person_and_writes_the_answer_down(q, clau
     assert "thinking" not in first["body"] and first["body"]["output_config"] == {"effort": "medium"}
     assert first["body"]["messages"][0]["content"].startswith("[2") and first["body"]["messages"][0]["content"].endswith(" UTC] How many conversations do I have?")
     assert "Morrow, the assistant" in first["body"]["system"][0]["text"] and "sam" in first["body"]["system"][0]["text"]
-    # What was looked at is on the page, with the answer.
-    page = sam.view("chat", conversation=conversation.id).text()
+    # The conversation is a chat: the question on one side, the answer on the
+    # other with what was looked at, and the box under them that asks on.
+    screen = sam.view("chat", conversation=conversation.id)
+    (chat,) = screen.find("conversation")
+    assert [line["fields"]["mine"] for line in chat["records"]] == [True, False]
+    assert chat["records"][1]["fields"]["note"] == "Looked at: list_datamodels; list_records morrow.conversation"
+    assert chat["ask"] == "ask" and chat["record"]["id"] == conversation.id and chat["name"] == "Morrow"
+    page = screen.text()
     assert "Looked at: list_datamodels; list_records morrow.conversation" in page
-    assert "one" in page
+    assert "one" in page and "[Message Morrow…]" in page
+    # A new one starts from a greeting, with the box that starts it.
+    fresh = sam.view("chat", new="1").find("conversation")[0]
+    assert fresh["ask"] == "start" and fresh["records"] == [] and "Hello" in fresh["empty"]
 
 
 def test_reading_only_until_the_person_allows_changes(q, claude):
@@ -170,8 +179,11 @@ def test_reading_only_until_the_person_allows_changes(q, claude):
     assert sam.act("ask", conversation, message="Now make it").ok
     assert "create_record" in [t["name"] for t in claude.requests[3]["body"]["tools"]]
     assert "Made by Morrow" in [c["title"] for c in sam.list(CONVERSATION)]
-    assert "Morrow may change things for you" in sam.view("mine").text()
+    # The setting is one switch behind the gear, lit now.
+    (switch,) = sam.view("mine").find("toggle")
+    assert switch["on"] is True and switch["action"] == "allow" and switch["field"] == "changes"
     assert sam.act("allow", changes=False).toast == "Morrow only reads now"
+    assert sam.view("mine").find("toggle")[0]["on"] is False
 
 
 def test_building_a_quill_makes_one_of_the_persons_own(q, claude):
@@ -254,3 +266,5 @@ def test_morrow_is_nobodys_tool_and_the_sheet_says_what_it_has(q):
     assert [f["host"] for f in manifest.fetch] == ["api.anthropic.com"]
     assert {s["id"]: s.get("admin", False) for s in manifest.screens}["settings"] is True
     assert {s["id"]: s.get("settings", False) for s in manifest.screens}["mine"] is True
+    # The setting's action is pressed from the settings screen alone: on no bar.
+    assert asks["allow"]["settings"] is True

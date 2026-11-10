@@ -171,9 +171,10 @@ A secret comes from the person's own vault (`cm secret set TRACKER_KEY`),
 and never when an assistant pressed the action.
 
 A key the whole server shares — an administrator's API key for a model —
-is a `secret = true` field on a datamodel the Quill introduces, set by an
+is a `secret = "quill"` field on a datamodel the Quill introduces, set by an
 `admin = true` action from the Quill's settings: the one record gives it to
 the Quill's own code alone, and to nobody through the record API.
+
 
 ## An assistant's tools
 
@@ -195,10 +196,10 @@ message = { kind = "text", required = true }
 ```
 
 ```python
-tools = ctx.assistant.tools()           # name, description, input_schema: the record tools over what
-answer = ctx.assistant.call("list_records", {"model": "task"})   # the person's circles give, every
-if answer["ok"]:                        # Quill's actions they may press, the Quill-building tools
-    tasks = answer["data"]["records"]   # — each run as the person, through the gate
+tools = ctx.assistant.tools()  # name, description, input_schema: the record tools over what
+answer = ctx.assistant.call("list_records", {"model": "task"})  # the person's circles give, every
+if answer["ok"]:  # Quill's actions they may press, the Quill-building tools
+    tasks = answer["data"]["records"]  # — each run as the person, through the gate
 ```
 
 The install sheet says *has an assistant's tools, as you*, and that is what

@@ -422,31 +422,57 @@ def connected_words(ctx, settings):
 
 
 def doing_words(ctx):
+    """The line under the box: what Morrow may do for this person, in a few words."""
     return (
-        "Morrow may change things for you: make, change and delete records, and press a Quill's actions, as you."
+        "Morrow may change things for you, as you. Morrow can be wrong: it says what it looked at."
         if may_change(ctx)
-        else "Morrow only reads, for now; the gear beside the title lets it change things for you."
+        else "Morrow reads only; Settings lets it change things for you. Morrow can be wrong: it says what it looked at."
     )
 
 
+def line_of(message):
+    """A message as a line of the conversation: its words, whose, when, and what came with it."""
+    status = str(message.get("status") or "said")
+    notes = []
+    if status == "failed":
+        notes.append("Claude could not be asked")
+    elif status == "cut":
+        notes.append("Cut short")
+    looked = message.get("looked") or []
+    if looked:
+        notes.append("Looked at: " + "; ".join(str(x) for x in looked))
+    return {
+        "id": message.id,
+        "model": message.model,
+        "fields": {
+            "body": str(message.get("body") or ""),
+            "mine": message.get("role") == "you",
+            "at": message.get("at"),
+            "note": " · ".join(notes),
+            "failed": status == "failed",
+        },
+    }
+
+
 def welcome(ctx, settings):
+    """A new conversation: a greeting in the middle, the box on the floor."""
     name = ctx.user.name or ctx.user.username
-    parts = [
-        ui.text(f"Hello {name}.", style="title"),
-        ui.text(
-            f"Morrow is your assistant on {ctx.cloud or 'this cloud'}. Ask it about anything you can see "
-            "here — it reads what you can read, as you, and never a secret or anybody else's. Ask for a "
-            "place to keep or track something and it builds you a Quill of your own.",
-            style="muted",
-        ),
-    ]
     missing = connected_words(ctx, settings)
     if missing:
-        parts.append(ui.empty(missing))
-        return ui.stack(*parts)
-    parts.append(ui.form("start", submit="Ask Morrow"))
-    parts.append(ui.text(doing_words(ctx), style="small"))
-    return ui.stack(*parts)
+        return ui.conversation([], body="body", mine="mine", empty=missing)
+    return ui.conversation(
+        [],
+        body="body",
+        mine="mine",
+        ask="start",
+        empty=(
+            f"Hello {name}. Ask Morrow about anything you can see on {ctx.cloud or 'this cloud'} — it reads "
+            "what you can read, as you — or for a place to keep or track something, and it builds you a "
+            "Quill of your own."
+        ),
+        placeholder="Ask Morrow",
+        hint=doing_words(ctx),
+    )
 
 
 def one_conversation(ctx, conversation_id, settings):
@@ -454,33 +480,31 @@ def one_conversation(ctx, conversation_id, settings):
         conversation = ctx.records.get(CONVERSATION, conversation_id)
     except (NotFound, Refused, Invalid):
         return ui.stack(ui.empty("That conversation is gone."), ui.button("Back", go="chat"))
-    parts = [ui.text(str(conversation["title"]), style="title")]
-    for line in messages_of(ctx, conversation):
-        who = "You" if line["role"] == "you" else "Morrow"
-        parts.append(ui.divider())
-        parts.append(ui.text(f"{who} · {when(line.get('at'))}", style="small"))
-        parts.append(ui.markdown(str(line["body"])))
-        if line.get("status") == "failed":
-            parts.append(ui.badge("Claude could not be asked", tone="bad"))
-        elif line.get("status") == "cut":
-            parts.append(ui.badge("Cut short", tone="warn"))
-        looked = line.get("looked") or []
-        if looked:
-            parts.append(ui.text("Looked at: " + "; ".join(str(x) for x in looked), style="muted"))
     missing = connected_words(ctx, settings)
-    if missing:
-        parts.append(ui.empty(missing))
-    else:
-        parts.append(ui.divider())
-        parts.append(ui.form("ask", record=conversation, submit="Send"))
-        parts.append(ui.text(doing_words(ctx), style="small"))
-    parts.append(
+    lines = [line_of(m) for m in messages_of(ctx, conversation)]
+    return ui.stack(
         ui.row(
-            ui.button("Rename", action="rename", record=conversation),
-            ui.button("Delete", action="forget", record=conversation, tone="danger"),
-        )
+            ui.text(str(conversation["title"]), style="subtitle"),
+            ui.menu(
+                "More",
+                ui.button("Rename", action="rename", record=conversation),
+                ui.button("Delete", action="forget", record=conversation, tone="danger"),
+            ),
+        ),
+        ui.conversation(
+            lines,
+            body="body",
+            mine="mine",
+            note="note",
+            failed="failed",
+            name="Morrow",
+            ask=None if missing else "ask",
+            record=conversation,
+            empty=missing or None,
+            placeholder="Message Morrow",
+            hint=None if missing else doing_words(ctx),
+        ),
     )
-    return ui.stack(*parts)
 
 
 @action("start")
@@ -523,21 +547,23 @@ def forget(ctx, conversation):
     return go("chat")
 
 
-# -- what Morrow may do for you ----------------------------------------------------------
+# -- settings: what Morrow may do for you ------------------------------------------------
 @view("mine")
 def mine(ctx):
-    changes = may_change(ctx)
+    """Behind the gear: one switch. Morrow always reads what you can read and
+    builds Quills of your own; whether it may change things is yours to say."""
     return ui.stack(
-        ui.text("What Morrow may do for you", style="title"),
+        ui.text("What Morrow may do", style="subtitle"),
         ui.text(
-            "Morrow always reads what you can read, as you, and builds Quills of your own when you ask. "
-            "Whether it may change things — make, change and delete records, press a Quill's actions — is yours to say.",
+            "Morrow always reads what you can read, as you, and builds Quills of your own when you ask.",
             style="muted",
         ),
-        ui.text(doing_words(ctx)),
-        ui.row(
-            ui.button("Reading only", action="allow", args={"changes": False}, current=not changes),
-            ui.button("Morrow may change things for me", action="allow", args={"changes": True}, tone="primary", current=changes),
+        ui.toggle(
+            "Morrow may change things for me",
+            action="allow",
+            on=may_change(ctx),
+            field="changes",
+            hint="Make, change and delete records, and press a Quill's actions, as you would. Off, Morrow only reads.",
         ),
     )
 

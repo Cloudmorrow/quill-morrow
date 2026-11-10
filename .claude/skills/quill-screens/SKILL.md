@@ -85,6 +85,8 @@ Keep it quick: list what you need, filter on indexed fields
 | `month(records, date=, title=)` | records on a month |
 | `field(record, name, edit=True)` | one field of one record, editable in place |
 | `form(action, values=…)` | an action's form, drawn in place |
+| `toggle(label, action=, on=, field=, hint=)` | a setting as a switch: flipping it runs the action at once with `field` set to the new state |
+| `conversation(records, body=, mine=, ask=, record=, name=, at=, note=, failed=, empty=, placeholder=, hint=)` | a chat: the person's lines (`mine`, a bool) on the right, the other side's (`name`) on the left; the box on the floor runs `ask` with what is typed (its first text field), enter sends |
 | `button(label, action=… \| open=record \| go=screen, tone=)` | does one thing |
 | `menu(label, *buttons)` | several things behind one button |
 
@@ -106,6 +108,61 @@ what a Quill can do.
 A view opened on one record (from `go`, or a record's sheet) has it in
 `ctx.params.record`.
 
+## Settings
+
+A person's own settings for the Quill are one screen marked `settings =
+true` (a view), opened by the gear beside the title on every screen of the
+Quill — never a tab, never a section at the foot of a screen, never a button
+on a screen. On it, a setting is a **toggle** or a **form**:
+
+```toml
+[[screens]]
+id = "mine"
+icon = "gear"
+label = "Settings"
+view = "mine"
+settings = true
+
+[[actions]]
+id = "allow"
+label = "What Morrow may do"
+settings = true                 # pressed from the settings screen alone: on no bar
+[actions.fields]
+changes = "bool"
+```
+
+```python
+@view("mine")
+def mine(ctx):
+    return ui.stack(
+        ui.text("What Morrow may do", style="subtitle"),
+        ui.toggle(
+            "Morrow may change things for me",
+            action="allow",
+            on=may_change(ctx),
+            field="changes",
+            hint="Make, change and delete records as you. Off, Morrow only reads.",
+        ),
+    )
+```
+
+Flipping the switch runs `allow` with `changes` set to the new state, at
+once, and the screen is drawn again. Never a row of buttons with the chosen
+one lit: `current=` on a button is for where you are (the folder you are
+in), not for a choice. The server's settings — a key, a domain — are a
+screen marked `admin = true` instead (see CLAUDE.md).
+
+## A conversation
+
+A chat with somebody — an assistant, a bot, a person — is `ui.conversation`:
+the lines are records (or dicts with `id`, `model` and `fields`) with the
+words in `body` and a bool in `mine` saying which side said it; `ask` names
+the action the box under the lines runs with what is typed, on `record`.
+What was sent is shown at once, with the other side thinking, until the
+action is done and the view is drawn again, so a turn that takes a while
+(give the action a `timeout`) reads as a chat does. `empty` is the greeting
+while there is nothing; `hint` a small line under the box.
+
 ## Check it
 
 - `cm quill check` — the manifest, and a sketch of every screen.
@@ -119,3 +176,5 @@ A view opened on one record (from `go`, or a record's sheet) has it in
 - Don't draw a screen per record type when a kit list would do.
 - Don't hide an action only in a view: declare it `on` its datamodel and it
   is on the record's sheet everywhere, on the command line and for the assistant too.
+- Don't put a setting on a screen, or make one a pair of buttons: it is a
+  toggle on the settings screen, and its action is marked `settings = true`.

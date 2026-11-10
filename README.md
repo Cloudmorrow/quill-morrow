@@ -6,17 +6,23 @@ Claude once, for everybody.
 
 A [Quill](https://github.com/Cloudmorrow/cloudmorrow/blob/main/docs/QUILLS.md)
 for Cloudmorrow: install it from the Quill Catalog, or from this repository
-with `cm quill add --source https://github.com/Cloudmorrow/quill-morrow --ref v1.0.0`.
-It needs Cloudmorrow 0.76.0 or later on the server (an assistant's tools
-for a Quill's code, `[assistant]`, arrived there).
+with `cm quill add --source https://github.com/Cloudmorrow/quill-morrow --ref v1.1.0`.
+It needs Cloudmorrow 0.80.0 or later on the server (an assistant's tools
+for a Quill's code arrived in 0.76.0; the conversation and the switch it is
+drawn with, in 0.80.0).
 
 ## What it is
 
-Morrow is a conversation. What you say is written down, Morrow looks at
-what it needs and answers, and the answer is written down beside yours with
-what it looked at — *Looked at: list_records task where lane=doing* — so
-every answer says where it came from. Conversations are yours alone,
-sealed at rest like every record, kept until you delete them.
+Morrow is a conversation, drawn as a chat: your conversations down the
+left, the open one on the right, what you said in a bubble on your side
+and Morrow's answer on the other, the box to write in on the floor. Enter
+sends; what you said shows at once while Morrow thinks. What you say is
+written down, Morrow looks at what it needs and answers, and the answer is
+written down beside yours with what it looked at — *Looked at:
+list_records task where lane=doing* — so every answer says where it came
+from. Conversations are yours alone, sealed at rest like every record, kept
+until you delete them (*More* beside a conversation's title renames or
+deletes it).
 
 **It reads what you can read, as you.** Morrow has what an assistant of
 yours over MCP has: the record tools over every datamodel your circles
@@ -27,9 +33,10 @@ datamodel: the install sheet says *has an assistant's tools, as you*, and
 that is what is said yes to.
 
 **Reading only, until you say otherwise.** Behind the gear beside the title
-is *What Morrow may do*: reading only, or changing things for you too —
-records made, changed and deleted, and a Quill's actions pressed, as you
-would. Off by default, each person's own choice.
+is Settings, with one switch: *Morrow may change things for me* — records
+made, changed and deleted, and a Quill's actions pressed, as you would.
+Off by default, each person's own choice, and nowhere on the conversation
+itself.
 
 **It builds Quills of your own.** Ask for a place to track the car's
 services, a reading list, a log of the hives, and Morrow writes the Quill —
@@ -81,8 +88,8 @@ which the core does not have yet.
 | | |
 | --- | --- |
 | Datamodels | introduces `morrow.settings` (the server's key and model, one record), `morrow.conversation`, `morrow.message` and `morrow.preference` (each person's own) |
-| Screens | Morrow (the conversations), What Morrow may do (behind the gear), Claude (an administrator's, on Morrow's sheet under Administration › Quills) |
-| Actions | Ask Morrow; Send; Rename; Delete; What Morrow may do; and an administrator's Connect Claude, Use this model, Try it, Disconnect |
+| Screens | Morrow (the conversations, as a chat), Settings (behind the gear: what Morrow may do), Claude (an administrator's, on Morrow's sheet under Administration › Quills) |
+| Actions | Ask Morrow (the pen: a new conversation); Send; Rename; Delete; What Morrow may do (the switch on Settings); and an administrator's Connect Claude, Use this model, Try it, Disconnect |
 | Code | `quill.py`, in the sandbox, as whoever uses it; reaches `api.anthropic.com`; has an assistant's tools, as you |
 
 ## Working on it
