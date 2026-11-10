@@ -7,9 +7,9 @@ Claude once, for everybody.
 A [Quill](https://github.com/Cloudmorrow/cloudmorrow/blob/main/docs/QUILLS.md)
 for Cloudmorrow: install it from the Quill Catalog, or from this repository
 with `cm quill add --source https://github.com/Cloudmorrow/quill-morrow --ref v1.1.0`.
-It needs Cloudmorrow 0.77.0 or later on the server (an assistant's tools
+It needs Cloudmorrow 0.80.0 or later on the server (an assistant's tools
 for a Quill's code arrived in 0.76.0; the conversation and the switch it is
-drawn with, in 0.77.0).
+drawn with, in 0.80.0).
 
 ## What it is
 
