@@ -6,9 +6,9 @@
 
 [quill]
 id = "morrow"
-name = "Morrow"
-version = "1.1.0"
-summary = "Your own assistant, on your own cloud: ask it about anything you can see here, and have it build Quills of your own. An administrator connects Claude once, for everybody."
+name = "Morrow AI"
+version = "1.2.0"
+summary = "Your own AI assistant, on your own cloud: a chat with Morrow about anything you can see here, and Quills of your own built when you ask. An administrator connects Claude once, for everybody."
 category = "personal"
 icon = "robot"
 publisher = "Cloudmorrow"
@@ -35,10 +35,10 @@ datamodels = []
 [[screens]]
 id = "chat"
 icon = "speech"
-label = "Morrow"
+label = "Morrow AI"
 view = "chat"
 model = "morrow.conversation"
-compose = { action = "start", label = "New conversation" }
+compose = { action = "new", label = "New conversation" }
 
 # Your settings: whether Morrow may change things for you. Behind the gear
 # beside the title, never a tab, never a button on the conversation.
@@ -64,12 +64,21 @@ admin = true
 # Each turn is one press: Morrow reads, thinks and answers before the screen
 # is drawn again, so these two have three minutes rather than fifteen
 # seconds. Neither is a tool for another assistant.
+# The pen: no form, the conversation is cleared for a new one and the open
+# one stays in the list.
+[[actions]]
+id = "new"
+label = "New conversation"
+assistant = false
+description = "Starts a new conversation; the open one stays in the list."
+
 [[actions]]
 id = "start"
 label = "Ask Morrow"
 tone = "primary"
 timeout = "3m"
 assistant = false
+bar = false
 description = "A new conversation, starting with this."
 [actions.fields]
 message = { kind = "text", required = true, label = "Ask" }
@@ -109,6 +118,17 @@ settings = true
 description = "Reading only, or changing things for you too: records made, changed and deleted, and a Quill's actions pressed, as you."
 [actions.fields]
 changes = { kind = "bool", label = "Morrow may change things for me" }
+
+# One switch per kind of data on the settings screen: off, Morrow does not
+# read that datamodel for this person, whatever their circles give them.
+[[actions]]
+id = "allow-data"
+label = "What Morrow may read"
+settings = true
+description = "Whether Morrow may read one kind of data for you: a datamodel id, and on or off."
+[actions.fields]
+model = { kind = "string", required = true, label = "Datamodel" }
+on = { kind = "bool", label = "Morrow may read it" }
 
 # -- the server's key, for an administrator ------------------------------------------
 # Marked admin: left out of everybody else's Morrow, refused to them, and on

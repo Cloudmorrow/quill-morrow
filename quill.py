@@ -97,6 +97,20 @@ def may_change(ctx):
     return bool(found and found.get("changes"))
 
 
+def hidden_of(ctx):
+    """The datamodels this person keeps from Morrow, by id."""
+    found = preference(ctx)
+    kept = found.get("hidden") if found is not None else None
+    return {str(x) for x in kept} if isinstance(kept, list) else set()
+
+
+def readable(ctx):
+    """Every datamodel the person may read, as list_datamodels says it: [{id, label, …}]."""
+    answer = ctx.assistant.call("list_datamodels", {})
+    rows = (answer.get("data") or {}).get("datamodels") if answer.get("ok") else None
+    return [r for r in (rows or []) if isinstance(r, dict) and r.get("id")]
+
+
 def truthy(value):
     return value is True or str(value).strip().lower() in ("true", "1", "yes", "on")
 
@@ -211,6 +225,15 @@ def echoed(content):
     ]
 
 
+def keep_out(answer, hidden):
+    """list_datamodels without what the person keeps from Morrow."""
+    data = answer.get("data") if isinstance(answer.get("data"), dict) else None
+    if not hidden or not data or not isinstance(data.get("datamodels"), list):
+        return answer
+    data = {**data, "datamodels": [r for r in data["datamodels"] if r.get("id") not in hidden]}
+    return {**answer, "data": data, "text": json.dumps(data)}
+
+
 def tools_for(ctx, changes):
     """An assistant's tools, as the person — all of them when Morrow may change
     things, the reading and building ones otherwise, in one order every time."""
@@ -221,7 +244,7 @@ def tools_for(ctx, changes):
     return tools
 
 
-def system_prompt(ctx, changes):
+def system_prompt(ctx, changes, hidden=()):
     name = ctx.user.name or ctx.user.username
     cloud = ctx.cloud or "this cloud"
     who = f"{name} (username {ctx.user.username}{', an administrator' if ctx.user.admin else ''})"
@@ -245,7 +268,13 @@ def system_prompt(ctx, changes):
         "list_records reads them (where= on indexed fields, q= for text, last= for the newest), "
         "get_record reads one. Say what you found plainly, and do not guess at data you did not read.\n"
         f"- {doing}\n"
-        f"- Building a Quill: when {name} wants a place to keep or track something, or an app of their "
+        + (
+            f"- {name} keeps these kinds of data from you: {', '.join(sorted(hidden))}. Do not read them, "
+            "and if asked about them say they are switched off for you in Morrow's settings.\n"
+            if hidden
+            else ""
+        )
+        + f"- Building a Quill: when {name} wants a place to keep or track something, or an app of their "
         "own, build them a Quill. Call quill_schema first and read it. Write quill.toml (and datamodels/ "
         "TOML, and quill.py only when something cannot be declared), check it with quill_check, fix what "
         "it says, then quill_dev_install. It is a Quill of their own: on their shelf alone, over their own "
@@ -280,7 +309,7 @@ def replayed(lines):
     return out
 
 
-def results_of(ctx, tool_uses, looked, changes):
+def results_of(ctx, tool_uses, looked, changes, hidden=()):
     """Run what the model asked for, as the person, and answer each."""
     results = []
     for block in tool_uses:
@@ -291,9 +320,11 @@ def results_of(ctx, tool_uses, looked, changes):
         looked.append(brief(name, arguments))
         if not changes and name not in READ_TOOLS and name not in BUILD_TOOLS:
             answer = {"ok": False, "text": "Morrow may only read for this person; they allow changes behind the gear."}
+        elif str(arguments.get("model") or "") in hidden:
+            answer = {"ok": False, "text": f"{arguments.get('model')} is switched off for Morrow in this person's settings."}
         else:
             try:
-                answer = ctx.assistant.call(name, arguments)
+                answer = keep_out(ctx.assistant.call(name, arguments), hidden)
             except NotFound as exc:
                 answer = {"ok": False, "text": str(exc)}
             except Refused as exc:
@@ -317,6 +348,7 @@ def turn(ctx, conversation, text):
     key = key_of(ctx, settings)
     model = model_of(settings)
     changes = may_change(ctx)
+    hidden = hidden_of(ctx)
     now = ctx.now()
     earlier = messages_of(ctx, conversation)
     asked = ctx.records.create(
@@ -328,7 +360,7 @@ def turn(ctx, conversation, text):
         "max_tokens": MAX_TOKENS,
         "output_config": {"effort": EFFORT},
         "fallbacks": "default",
-        "system": [{"type": "text", "text": system_prompt(ctx, changes), "cache_control": {"type": "ephemeral"}}],
+        "system": [{"type": "text", "text": system_prompt(ctx, changes, hidden), "cache_control": {"type": "ephemeral"}}],
         "tools": tools_for(ctx, changes),
         "messages": messages,
     }
@@ -353,7 +385,10 @@ def turn(ctx, conversation, text):
             tool_uses = [b for b in kept if b.get("type") == "tool_use"]
             if tool_uses and stop in ("tool_use", "pause_turn"):
                 body["messages"] = [*body["messages"], {"role": "assistant", "content": kept}]
-                body["messages"] = [*body["messages"], {"role": "user", "content": results_of(ctx, tool_uses, looked, changes)}]
+                body["messages"] = [
+                    *body["messages"],
+                    {"role": "user", "content": results_of(ctx, tool_uses, looked, changes, hidden)},
+                ]
                 continue
             if stop == "pause_turn":
                 body["messages"] = [*body["messages"], {"role": "assistant", "content": kept}]
@@ -394,17 +429,14 @@ def chat(ctx):
     conversations = sorted(
         ctx.records.list(CONVERSATION), key=lambda c: str(c.get("last_at") or c.get("started_at") or ""), reverse=True
     )
-    side = ui.stack(
-        ui.button("New conversation", go="chat", params={"new": "1"}, tone="primary"),
-        ui.cards(
-            conversations,
-            title="title",
-            subtitle="last_at",
-            go="chat",
-            param="conversation",
-            current=opened,
-            empty="Nothing asked yet.",
-        ),
+    side = ui.rows(
+        conversations,
+        title="title",
+        subtitle="last_at",
+        go="chat",
+        param="conversation",
+        current=opened,
+        empty="Nothing asked yet. The pen starts a conversation.",
     )
     if opened:
         main = one_conversation(ctx, opened, settings)
@@ -459,12 +491,13 @@ def welcome(ctx, settings):
     name = ctx.user.name or ctx.user.username
     missing = connected_words(ctx, settings)
     if missing:
-        return ui.conversation([], body="body", mine="mine", empty=missing)
+        return ui.conversation([], body="body", mine="mine", empty=missing, backdrop="mascot")
     return ui.conversation(
         [],
         body="body",
         mine="mine",
         ask="start",
+        backdrop="mascot",
         empty=(
             f"Hello {name}. Ask Morrow about anything you can see on {ctx.cloud or 'this cloud'} — it reads "
             "what you can read, as you — or for a place to keep or track something, and it builds you a "
@@ -482,20 +515,15 @@ def one_conversation(ctx, conversation_id, settings):
         return ui.stack(ui.empty("That conversation is gone."), ui.button("Back", go="chat"))
     missing = connected_words(ctx, settings)
     lines = [line_of(m) for m in messages_of(ctx, conversation)]
+    # Rename and Delete are the conversation's own actions: on its row's menu and its sheet.
     return ui.stack(
-        ui.row(
-            ui.text(str(conversation["title"]), style="subtitle"),
-            ui.menu(
-                "More",
-                ui.button("Rename", action="rename", record=conversation),
-                ui.button("Delete", action="forget", record=conversation, tone="danger"),
-            ),
-        ),
+        ui.text(str(conversation["title"]), style="subtitle"),
         ui.conversation(
             lines,
             body="body",
             mine="mine",
             note="note",
+            backdrop="mascot",
             failed="failed",
             name="Morrow",
             ask=None if missing else "ask",
@@ -505,6 +533,12 @@ def one_conversation(ctx, conversation_id, settings):
             hint=None if missing else doing_words(ctx),
         ),
     )
+
+
+@action("new")
+def new(ctx):
+    """The pen: the screen cleared for a new conversation; the open one stays in the list."""
+    return go("chat", new="1")
 
 
 @action("start")
@@ -550,20 +584,32 @@ def forget(ctx, conversation):
 # -- settings: what Morrow may do for you ------------------------------------------------
 @view("mine")
 def mine(ctx):
-    """Behind the gear: one switch. Morrow always reads what you can read and
-    builds Quills of your own; whether it may change things is yours to say."""
+    """Behind the gear: whether Morrow may change things, and which kinds of
+    data it may read — a switch per datamodel your circles give you."""
+    hidden = hidden_of(ctx)
+    kinds = [r for r in readable(ctx) if not str(r["id"]).startswith("morrow.")]
     return ui.stack(
         ui.text("What Morrow may do", style="subtitle"),
-        ui.text(
-            "Morrow always reads what you can read, as you, and builds Quills of your own when you ask.",
-            style="muted",
-        ),
+        ui.text("Morrow reads what you can read, as you, and builds Quills of your own when you ask.", style="muted"),
         ui.toggle(
             "Morrow may change things for me",
             action="allow",
             on=may_change(ctx),
             field="changes",
             hint="Make, change and delete records, and press a Quill's actions, as you would. Off, Morrow only reads.",
+        ),
+        ui.text("What Morrow may read", style="subtitle"),
+        ui.text("Switch off what Morrow should keep out of. Its own conversations it always keeps.", style="muted"),
+        *(
+            ui.toggle(
+                str(kind.get("label") or kind["id"]),
+                action="allow-data",
+                on=kind["id"] not in hidden,
+                field="on",
+                args={"model": kind["id"]},
+                hint=str(kind.get("description") or kind["id"]),
+            )
+            for kind in sorted(kinds, key=lambda k: str(k.get("label") or k["id"]).lower())
         ),
     )
 
@@ -577,6 +623,23 @@ def allow(ctx, changes=False):
     else:
         ctx.records.patch(PREFERENCE, found.id, changes=wanted)
     return toast("Morrow may change things for you now" if wanted else "Morrow only reads now")
+
+
+@action("allow_data")
+def allow_data(ctx, model, on=False):
+    model = str(model).strip()
+    hidden = hidden_of(ctx)
+    if truthy(on):
+        hidden.discard(model)
+    else:
+        hidden.add(model)
+    found = preference(ctx)
+    kept = sorted(hidden)
+    if found is None:
+        ctx.records.create(PREFERENCE, changes=False, hidden=kept)
+    else:
+        ctx.records.patch(PREFERENCE, found.id, hidden=kept)
+    return toast(f"Morrow reads {model} for you again" if truthy(on) else f"Morrow keeps out of {model} for you")
 
 
 # -- the server's key, for an administrator --------------------------------------------
