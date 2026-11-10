@@ -1,0 +1,13 @@
+# What Morrow may do for one person: read, or change things too. One record
+# each, theirs alone; none means reading only.
+
+[datamodel]
+id = "morrow.preference"
+version = 1
+label = "What Morrow may do"
+description = "Whether Morrow may change things for you, or only read."
+scopes = ["personal"]
+title = "changes"
+
+[fields]
+changes = { kind = "bool", default = false, label = "Morrow may change things for me", description = "Make, change and delete records, and press a Quill's actions, as you" }

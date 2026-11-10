@@ -1,0 +1,156 @@
+# Morrow: an assistant of your own, on your own cloud. An administrator gives
+# the server a key to Claude once, on Morrow's sheet under Administration ›
+# Quills, and everybody on the server has Morrow: it reads what they may
+# read, as them, through the same gate as everything else, and it builds
+# Quills of their own when asked. See CLAUDE.md for the format and the loop.
+
+[quill]
+id = "morrow"
+name = "Morrow"
+version = "1.0.0"
+summary = "Your own assistant, on your own cloud: ask it about anything you can see here, and have it build Quills of your own. An administrator connects Claude once, for everybody."
+category = "personal"
+icon = "robot"
+publisher = "Cloudmorrow"
+license = "AGPL-3.0-or-later"
+code = "quill.py"
+features = [
+  "A conversation with Morrow, on the web, the phone, in the terminal and on the command line; every conversation kept, yours alone, sealed at rest",
+  "Morrow reads what you can read — tasks, notes, contacts, whatever your circles give you — as you, through the gate; never a secret, never anybody else's",
+  "Reading only, unless you say Morrow may change things for you: then it makes, changes and deletes records and presses a Quill's actions as you would",
+  "Ask for a Quill of your own and Morrow writes it, checks it and installs it on your shelf — a place to track the car's services, a reading list — the way an assistant over MCP does",
+  "One key for the whole server: an administrator connects Claude on Morrow's sheet under Administration › Quills, picks the model, and the key is read by Morrow's code alone",
+  "Every answer says what Morrow looked at",
+]
+
+# Everything Morrow keeps is its own: the server's key and model, each
+# person's conversations and what Morrow may do for them. What Morrow reads
+# for a person is theirs already, reached as their assistant ([assistant]).
+[uses]
+datamodels = []
+
+# -- screens -------------------------------------------------------------------------
+# The conversation: yours down the left, the open one on the right with a
+# box to write in. ?conversation= opens one.
+[[screens]]
+id = "chat"
+icon = "speech"
+label = "Morrow"
+view = "chat"
+model = "morrow.conversation"
+
+# What Morrow may do for you: read, or change things too. Behind the gear
+# beside the title, never a tab.
+[[screens]]
+id = "mine"
+icon = "gear"
+label = "What Morrow may do"
+view = "mine"
+model = "morrow.preference"
+settings = true
+
+# The server's key to Claude and the model: an administrator's alone, drawn
+# on Morrow's sheet under Administration › Quills and nowhere else.
+[[screens]]
+id = "settings"
+icon = "key"
+label = "Claude"
+view = "settings"
+model = "morrow.settings"
+admin = true
+
+# -- actions -------------------------------------------------------------------------
+# Each turn is one press: Morrow reads, thinks and answers before the screen
+# is drawn again, so these two have three minutes rather than fifteen
+# seconds. Neither is a tool for another assistant.
+[[actions]]
+id = "start"
+label = "Ask Morrow"
+tone = "primary"
+timeout = "3m"
+assistant = false
+description = "A new conversation, starting with this."
+[actions.fields]
+message = { kind = "text", required = true, label = "Ask" }
+
+[[actions]]
+id = "ask"
+label = "Send"
+on = "morrow.conversation"
+tone = "primary"
+timeout = "3m"
+assistant = false
+description = "Says this to Morrow, in this conversation."
+[actions.fields]
+message = { kind = "text", required = true, label = "Say" }
+
+[[actions]]
+id = "rename"
+label = "Rename"
+on = "morrow.conversation"
+description = "Calls the conversation something else."
+[actions.fields]
+title = { kind = "string", required = true }
+
+[[actions]]
+id = "forget"
+label = "Delete"
+on = "morrow.conversation"
+confirm = "Delete this conversation? Morrow will not remember it."
+tone = "danger"
+description = "Deletes the conversation and everything said in it."
+
+[[actions]]
+id = "allow"
+label = "What Morrow may do"
+description = "Reading only, or changing things for you too: records made, changed and deleted, and a Quill's actions pressed, as you."
+[actions.fields]
+changes = { kind = "bool", label = "Morrow may change things for me" }
+
+# -- the server's key, for an administrator ------------------------------------------
+# Marked admin: left out of everybody else's Morrow, refused to them, and on
+# no bar or palette. The Claude screen draws their buttons.
+[[actions]]
+id = "connect"
+admin = true
+label = "Connect Claude"
+tone = "primary"
+description = "An API key from console.anthropic.com. Morrow tries it once, then keeps it sealed: read by Morrow's code alone, shown to nobody. Administrators only."
+[actions.fields]
+key = { kind = "string", required = true, description = "An Anthropic API key, sk-ant-…, made under API Keys at console.anthropic.com" }
+
+[[actions]]
+id = "choose-model"
+admin = true
+label = "Use this model"
+description = "Which Claude answers everybody. Opus is the most capable; Sonnet is quicker and cheaper; Haiku is the quickest and cheapest. Administrators only."
+[actions.fields]
+model = { kind = "enum", required = true, values = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"], labels = ["Claude Opus 5.5", "Claude Sonnet 5.5", "Claude Haiku 5.5"] }
+
+[[actions]]
+id = "test"
+admin = true
+label = "Try it"
+description = "One short question to Claude with the server's key, to see that it answers. Administrators only."
+
+[[actions]]
+id = "disconnect"
+admin = true
+label = "Disconnect"
+confirm = "Forget the key? Nobody can talk to Morrow until a key is connected again; the conversations stay."
+tone = "danger"
+description = "Forgets the key. Administrators only."
+
+# -- outside ---------------------------------------------------------------------------
+# The only host the code reaches: Anthropic's API, with the server's key.
+[[fetch]]
+host = "api.anthropic.com"
+why = "to ask Claude, with the key an administrator connected"
+
+# Morrow is the person's assistant: it is given what an assistant over MCP
+# has — the record tools over every datamodel their circles give them (never
+# a secret), every Quill's actions they may press, the Quill-building tools —
+# each run as them, through the gate. That is what the install sheet says.
+[assistant]
+tools = true
+why = "so Morrow can read what you can read, do what you let it, and build Quills of your own, as you"

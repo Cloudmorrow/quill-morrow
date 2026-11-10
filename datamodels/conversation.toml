@@ -1,0 +1,14 @@
+# A conversation with Morrow: yours alone. What was said is in morrow.message.
+
+[datamodel]
+id = "morrow.conversation"
+version = 1
+label = "Conversation"
+description = "A conversation with Morrow."
+scopes = ["personal"]
+title = "title"
+
+[fields]
+title = { kind = "string", required = true }
+started_at = { kind = "datetime", indexed = true, label = "Started" }
+last_at = { kind = "datetime", indexed = true, label = "Last said" }

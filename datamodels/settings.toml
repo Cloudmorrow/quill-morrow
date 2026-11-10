@@ -1,0 +1,20 @@
+# The server's key to Claude, and the model: one record, for everybody. A
+# public space, so every person's Morrow reads the model and finds the key
+# there, and only an administrator changes it. The key is secret = "quill":
+# read by Morrow's own code alone, never through the record API, never
+# drawn. There is never more than one.
+
+[datamodel]
+id = "morrow.settings"
+version = 1
+label = "Claude"
+description = "The server's key to Claude and the model Morrow answers with."
+scopes = ["public"]
+space = true
+title = "model"
+
+[fields]
+key = { kind = "string", required = true, secret = "quill", description = "The Anthropic API key, read by Morrow's code alone" }
+model = { kind = "enum", values = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"], labels = ["Claude Opus 5.5", "Claude Sonnet 5.5", "Claude Haiku 5.5"], default = "claude-opus-5-5", description = "Which Claude answers" }
+status = { kind = "string", description = "How connecting, or the last try, went" }
+connected_at = { kind = "datetime", label = "Connected" }

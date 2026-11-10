@@ -1,0 +1,20 @@
+# One thing said in a conversation: by you, or by Morrow. Sealed at rest,
+# like every record. `looked` is what Morrow looked at to answer: the tools
+# it used, in order, so every answer says where it came from.
+
+[datamodel]
+id = "morrow.message"
+version = 1
+label = "Message"
+description = "Something said to Morrow, or by it."
+scopes = ["personal"]
+title = "body"
+
+[fields]
+conversation = { kind = "link", to = "morrow.conversation", required = true, on_delete = "cascade" }
+role = { kind = "enum", values = ["you", "morrow"], labels = ["You", "Morrow"], required = true, indexed = true }
+body = { kind = "markdown", required = true }
+looked = { kind = "json", description = "What Morrow looked at: the tools it used, in order" }
+status = { kind = "enum", values = ["said", "failed", "cut"], labels = ["Said", "Failed", "Cut short"], default = "said", description = "Failed: Claude could not be reached; cut: Morrow ran out of room or time" }
+at = { kind = "datetime", indexed = true, label = "When" }
+n = { kind = "int", indexed = true, description = "Its place in the conversation: what was said first has the lowest" }
