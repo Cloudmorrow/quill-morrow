@@ -154,6 +154,7 @@ on = "vehicle"                     # optional: done to one record; the handler g
 confirm = "Log it?"                # optional; tone = "primary" | "danger"; assistant = false
 # timeout = "2m"                   # up to 5m, for one that waits on something outside; else 15s
 # settings = true                  # a person's own setting: pressed from the settings screen alone
+# bar = false                      # not a chip on the bar under the title: a screen's own box runs it
 [actions.fields]                   # its form, checked before the code runs
 date = { kind = "date", required = true }
 km = "int"
@@ -232,11 +233,13 @@ name, edit=)`, `form(action)`, `button(label, action= | open= | go=)`,
 `menu`, `toggle(label, action=, on=, field=, hint=)` (a setting as a switch:
 flipping it runs the action at once with `field` set to the new state),
 `conversation(records, body=, mine=, ask=, record=, name=, at=, note=,
-failed=, empty=, placeholder=, hint=)` (a chat: the person's lines on the
+failed=, empty=, placeholder=, hint=, backdrop=)` (a chat: the person's lines on the
 right, the other side's on the left, a box on the floor that runs `ask`
 with what is typed), `table(records, columns=, actions=, go=, param=)`, `cards(records,
-title=, …, go=, param=)` (a row or a card opens its sheet, or with `go` a
-screen of the Quill's own, the record's id as `param`),
+title=, …, go=, param=)`, `rows(records, title=, subtitle=, badge=, go=,
+param=, current=)` (a row, a card or a list row opens its sheet, or with `go` a
+screen of the Quill's own, the record's id as `param`; `rows` are the app's
+own list rows, the open one lit),
 `gallery(records, title=, subtitle=, badge=, stars=, rate=, actions=)` (files
 as picture tiles with five stars; a star runs `rate` with `stars=`),
 `lanes(records, field=, title=)`, `month(records, date=, title=)`. Every

@@ -80,13 +80,14 @@ Keep it quick: list what you need, filter on indexed fields
 | `image(record=…)` or `image("https://…")` | a picture: a file record, or an https address |
 | `table(records, columns=[…], actions=[…], open=True)` | records, a row each; `actions` are action ids pressed per row |
 | `cards(records, title=, subtitle=, body=, badge=)` | records, a card each (field names) |
+| `rows(records, title=, subtitle=, badge=, go=, param=, current=)` | records as the app's list rows, the open one lit: the list beside what is open in it (Notes' list) |
 | `gallery(records, title=, subtitle=, badge=, stars=, rate=, actions=[…])` | files as picture tiles (a video's picture is a frame of it); `stars` names a 0–5 field drawn as stars, and pressing one runs the `rate` action with `stars=` |
 | `lanes(records, field=, title=)` | cards in columns by an enum field; dragging moves them |
 | `month(records, date=, title=)` | records on a month |
 | `field(record, name, edit=True)` | one field of one record, editable in place |
 | `form(action, values=…)` | an action's form, drawn in place |
 | `toggle(label, action=, on=, field=, hint=)` | a setting as a switch: flipping it runs the action at once with `field` set to the new state |
-| `conversation(records, body=, mine=, ask=, record=, name=, at=, note=, failed=, empty=, placeholder=, hint=)` | a chat: the person's lines (`mine`, a bool) on the right, the other side's (`name`) on the left; the box on the floor runs `ask` with what is typed (its first text field), enter sends |
+| `conversation(records, body=, mine=, ask=, record=, name=, at=, note=, failed=, empty=, placeholder=, hint=, backdrop=)` | a chat: the person's lines (`mine`, a bool) on the right, the other side's (`name`) on the left; the box on the floor runs `ask` with what is typed (its first text field), enter sends |
 | `button(label, action=… \| open=record \| go=screen, tone=)` | does one thing |
 | `menu(label, *buttons)` | several things behind one button |
 

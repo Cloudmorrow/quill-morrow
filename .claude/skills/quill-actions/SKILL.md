@@ -20,6 +20,7 @@ assistant = true               # false keeps it from assistants
 # settings = true              # a person's own setting: pressed from the settings screen
                                # (a toggle, a form) and on no bar or palette; on no record
 # admin = true                 # the server's: an administrator's alone, on their admin screen
+# bar = false                  # not a chip on the bar under the title: a screen's own box runs it
 [actions.fields]               # its form: the same field kinds as a datamodel's
 date = { kind = "date", required = true }
 km = { kind = "int", required = true }

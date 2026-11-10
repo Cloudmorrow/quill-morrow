@@ -1,13 +1,15 @@
-# What Morrow may do for one person: read, or change things too. One record
-# each, theirs alone; none means reading only.
+# What Morrow may do for one person: read, or change things too, and which
+# kinds of data it keeps out of. One record each, theirs alone; none means
+# reading only, everything their circles give them.
 
 [datamodel]
 id = "morrow.preference"
-version = 1
+version = 2
 label = "What Morrow may do"
-description = "Whether Morrow may change things for you, or only read."
+description = "Whether Morrow may change things for you, or only read, and what it may not read."
 scopes = ["personal"]
 title = "changes"
 
 [fields]
 changes = { kind = "bool", default = false, label = "Morrow may change things for me", description = "Make, change and delete records, and press a Quill's actions, as you" }
+hidden = { kind = "json", label = "Kept from Morrow", description = "Datamodel ids Morrow does not read for you" }

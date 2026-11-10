@@ -179,11 +179,53 @@ def test_reading_only_until_the_person_allows_changes(q, claude):
     assert sam.act("ask", conversation, message="Now make it").ok
     assert "create_record" in [t["name"] for t in claude.requests[3]["body"]["tools"]]
     assert "Made by Morrow" in [c["title"] for c in sam.list(CONVERSATION)]
-    # The setting is one switch behind the gear, lit now.
-    (switch,) = sam.view("mine").find("toggle")
+    # The setting is a switch behind the gear, lit now.
+    switch = sam.view("mine").find("toggle")[0]
     assert switch["on"] is True and switch["action"] == "allow" and switch["field"] == "changes"
     assert sam.act("allow", changes=False).toast == "Morrow only reads now"
     assert sam.view("mine").find("toggle")[0]["on"] is False
+
+
+def test_a_kind_of_data_switched_off_is_kept_from_morrow(q, claude):
+    """Behind the gear, a switch per datamodel the person may read: off, Morrow
+    neither lists it nor reads it, and is told so."""
+    connect(q, claude)
+    sam = q.as_user("sam")
+    switches = {t["label"]: t for t in sam.view("mine").find("toggle")}
+    assert "Morrow may change things for me" in switches
+    # The harness has the server's own datamodels (approval, flow, …); a server has every Quill's.
+    approval = next(t for t in switches.values() if t.get("args") == {"model": "approval"})
+    assert approval["on"] is True and approval["action"] == "allow-data" and approval["field"] == "on"
+    assert not any((t.get("args") or {}).get("model", "").startswith("morrow.") for t in switches.values())
+    assert sam.act("allow-data", model="approval", on=False).toast == "Morrow keeps out of approval for you"
+    assert sam.list(PREFERENCE)[0]["hidden"] == ["approval"]
+    assert next(t for t in sam.view("mine").find("toggle") if t.get("args") == {"model": "approval"})["on"] is False
+    claude.says(tool_use("list_datamodels"), stop="tool_use")
+    claude.says(tool_use("list_records", model="approval"), stop="tool_use")
+    claude.says(text("Approvals are switched off for me."))
+    assert sam.act("start", message="What approvals are open?").ok
+    assert "keeps these kinds of data from you: approval" in claude.requests[1]["body"]["system"][0]["text"]
+    listed = [r["id"] for r in json.loads(claude.requests[2]["body"]["messages"][-1]["content"][0]["content"])["datamodels"]]
+    assert "approval" not in listed and "flow" in listed
+    refused = claude.requests[3]["body"]["messages"][-1]["content"][0]
+    assert refused["is_error"] is True and "switched off" in refused["content"]
+    assert sam.act("allow-data", model="approval", on=True).toast == "Morrow reads approval for you again"
+    assert sam.list(PREFERENCE)[0]["hidden"] == []
+
+
+def test_the_pen_clears_the_screen_for_a_new_conversation(q, claude):
+    connect(q, claude)
+    done = q.act("new")
+    assert done.ok and done.effects == [{"effect": "go", "screen": "chat", "params": {"new": "1"}}]
+    assert q.manifest.screens[0]["compose"]["action"] == "new"
+    # The list on the left is rows, the open one lit; the chat has the hedgehog behind it.
+    claude.says(text("Hello."))
+    assert q.act("start", message="Hi").ok
+    conversation = q.list(CONVERSATION)[0]
+    screen = q.view("chat", conversation=conversation.id)
+    (listed,) = screen.find("rows")
+    assert listed["current"] == conversation.id and listed["go"] == "chat" and listed["param"] == "conversation"
+    assert screen.find("conversation")[0]["backdrop"] == "mascot" and not screen.find("menu")
 
 
 def test_building_a_quill_makes_one_of_the_persons_own(q, claude):
