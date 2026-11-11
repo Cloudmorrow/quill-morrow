@@ -225,6 +225,9 @@ def test_the_pen_clears_the_screen_for_a_new_conversation(q, claude):
     screen = q.view("chat", conversation=conversation.id)
     (listed,) = screen.find("rows")
     assert listed["current"] == conversation.id and listed["go"] == "chat" and listed["param"] == "conversation"
+    # Docs' list: a search field, the rows under Today, Yesterday, …, and a side that folds.
+    assert listed["search"] == "Search conversations" and listed["group"] == "last_at"
+    assert screen.find("split")[0]["fold"] is True and screen.find("split")[0]["show"] == "main"
     assert screen.find("conversation")[0]["backdrop"] == "mascot" and not screen.find("menu")
 
 

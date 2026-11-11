@@ -437,12 +437,21 @@ def chat(ctx):
         param="conversation",
         current=opened,
         empty="Nothing asked yet. The pen starts a conversation.",
+        search="Search conversations",
+        group="last_at",
     )
     if opened:
         main = one_conversation(ctx, opened, settings)
     else:
         main = welcome(ctx, settings)
-    return ui.split(side, main, show="main" if (opened or fresh or not conversations) else "side", back={} if opened or fresh else None)
+    # The list folds away on a computer, as Docs' does; the pen stays in the heading.
+    return ui.split(
+        side,
+        main,
+        show="main" if (opened or fresh or not conversations) else "side",
+        back={} if opened or fresh else None,
+        fold=True,
+    )
 
 
 def connected_words(ctx, settings):
