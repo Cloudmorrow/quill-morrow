@@ -37,9 +37,42 @@ class Claude:
 
     def __call__(self, method, url, headers, body):
         assert url == API and method == "POST"
-        self.requests.append({"headers": headers, "body": json.loads(body or b"{}")})
+        request = json.loads(body or b"{}")
+        self.requests.append({"headers": headers, "body": request})
         status, answer = self.answers.pop(0) if self.answers else (500, {"type": "error", "error": {"type": "api_error", "message": "nothing left to say"}})
+        if status == 200 and request.get("stream"):
+            return {"status": 200, "headers": {"Content-Type": "text/event-stream"}, "body": base64.b64encode(sse(answer).encode()).decode()}
         return {"status": status, "headers": {"Content-Type": "application/json"}, "body": base64.b64encode(json.dumps(answer).encode()).decode()}
+
+
+def sse(answer):
+    """A message as the Messages API streams it: the text in two pieces, a tool
+    use's input as partial JSON, the stop reason in the last delta."""
+    out = []
+
+    def event(name, data):
+        out.append(f"event: {name}\ndata: {json.dumps(data)}\n\n")
+
+    head = {k: v for k, v in answer.items() if k not in ("content", "stop_reason", "stop_details")}
+    event("message_start", {"type": "message_start", "message": {**head, "content": [], "stop_reason": None}})
+    for i, block in enumerate(answer["content"]):
+        if block["type"] == "text":
+            event("content_block_start", {"type": "content_block_start", "index": i, "content_block": {"type": "text", "text": ""}})
+            words = block["text"]
+            for piece in (words[: len(words) // 2], words[len(words) // 2 :]):
+                if piece:
+                    event("content_block_delta", {"type": "content_block_delta", "index": i, "delta": {"type": "text_delta", "text": piece}})
+        elif block["type"] == "tool_use":
+            start = {"type": "tool_use", "id": block["id"], "name": block["name"], "input": {}}
+            event("content_block_start", {"type": "content_block_start", "index": i, "content_block": start})
+            event("content_block_delta", {"type": "content_block_delta", "index": i, "delta": {"type": "input_json_delta", "partial_json": json.dumps(block["input"])}})
+        else:
+            event("content_block_start", {"type": "content_block_start", "index": i, "content_block": block})
+        event("content_block_stop", {"type": "content_block_stop", "index": i})
+    delta = {k: v for k, v in answer.items() if k in ("stop_reason", "stop_sequence", "stop_details")}
+    event("message_delta", {"type": "message_delta", "delta": delta, "usage": {"output_tokens": 1}})
+    event("message_stop", {"type": "message_stop"})
+    return "".join(out)
 
 
 def text(words):
@@ -246,6 +279,24 @@ def test_the_x_on_each_stored_chat_is_delete_asked_first(q, claude):
     assert forget["confirm"] and forget["on"] == CONVERSATION and forget["tone"] == "danger"
     assert q.act("forget", record=conversation).ok
     assert not q.list(CONVERSATION)
+
+
+def test_the_answer_is_said_as_it_comes(q, claude):
+    """Claude is asked with stream = true and the answer assembled from its
+    events; every piece of text reaches ctx.progress, the whole at the end,
+    and what was said before a look is kept in front of what comes after."""
+    connect(q, claude)
+    claude.says(text("Let me look."), tool_use("list_datamodels"), stop="tool_use")
+    claude.says(text("You have **one** conversation."))
+    done = q.act("start", message="How many?")
+    assert done.ok, done
+    assert all(r["body"]["stream"] is True for r in claude.requests)
+    assert done.progress[0] == "Let me" and done.progress[1] == "Let me look."
+    assert done.progress[-1] == "Let me look.\n\nYou have **one** conversation."
+    assert len(done.progress) == 4
+    conversation = q.list(CONVERSATION)[0]
+    reply = [m for m in q.list(MESSAGE, conversation=conversation.id) if m["role"] == "morrow"][0]
+    assert reply["body"] == "Let me look.\n\nYou have **one** conversation." and reply["looked"] == ["list_datamodels"]
 
 
 def test_building_a_quill_makes_one_of_the_persons_own(q, claude):

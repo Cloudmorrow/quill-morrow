@@ -217,8 +217,10 @@ envelope as `.id`, `.rev`, `.model`), `ctx.assistant` (with `[assistant]
 tools = true`: `tools()` as a model wants them, `call(name, arguments)` →
 `{ok, text, data}`, each as the person — an assistant's own reach, including
 `quill_check` and `quill_dev_install` with `mine = true`), `ctx.fetch(url, method=, headers=,
-
-json=)`, `ctx.secret(key)`, `ctx.now()`, `ctx.log(...)`, and on a machine
+json=, stream=)` (`stream=True`: a `Stream`, the body as it comes — `.chunks()`,
+`.lines()`, `.events()` for a server-sent stream), `ctx.progress(text)` (what a
+long action has so far, drawn where it was pressed: a conversation's answer as
+it is said), `ctx.secret(key)`, `ctx.now()`, `ctx.log(...)`, and on a machine
 `ctx.records.create(..., scope=, members=)` makes a space, shared with its
 members; `ctx.records.seen(model, id)` is the person having looked in one;
 `ctx.people()` is everybody on the server but them. `ctx.folder(name)` and
