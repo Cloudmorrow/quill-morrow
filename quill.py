@@ -439,6 +439,7 @@ def chat(ctx):
         empty="Nothing asked yet. The pen starts a conversation.",
         search="Search conversations",
         group="last_at",
+        close="forget",
     )
     if opened:
         main = one_conversation(ctx, opened, settings)
@@ -525,7 +526,7 @@ def one_conversation(ctx, conversation_id, settings):
     missing = connected_words(ctx, settings)
     lines = [line_of(m) for m in messages_of(ctx, conversation)]
     # Rename and Delete are the conversation's own actions: on its row's menu
-    # and its sheet; Delete is the X in the corner too, asked first.
+    # and its sheet; Delete is the little X at its row's end too, asked first.
     return ui.stack(
         ui.text(str(conversation["title"]), style="subtitle"),
         ui.conversation(
@@ -538,7 +539,6 @@ def one_conversation(ctx, conversation_id, settings):
             name="Morrow",
             ask=None if missing else "ask",
             record=conversation,
-            close="forget",
             empty=missing or None,
             placeholder="Message Morrow",
             hint=None if missing else doing_words(ctx),

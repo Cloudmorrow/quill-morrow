@@ -231,21 +231,21 @@ def test_the_pen_clears_the_screen_for_a_new_conversation(q, claude):
     assert screen.find("conversation")[0]["backdrop"] == "mascot" and not screen.find("menu")
 
 
-def test_the_x_on_a_conversation_is_delete_asked_first(q, claude):
-    """Every open conversation has the X in its corner: the forget action on
-    it, which the manifest says to confirm, so the page asks before it goes."""
+def test_the_x_on_each_stored_chat_is_delete_asked_first(q, claude):
+    """Every row of the list ends in a little X: the forget action on that
+    conversation, which the manifest says to confirm, so the page asks
+    before it goes. The chat window itself has no X."""
     connect(q, claude)
     claude.says(text("Hello."))
     assert q.act("start", message="Hi").ok
     conversation = q.list(CONVERSATION)[0]
-    (chat,) = q.view("chat", conversation=conversation.id).find("conversation")
-    assert chat["close"] == "forget" and chat["record"]["id"] == conversation.id
+    screen = q.view("chat", conversation=conversation.id)
+    assert screen.find("rows")[0]["close"] == "forget"
+    assert "close" not in screen.find("conversation")[0]
     forget = next(a for a in q.manifest.actions if a["id"] == "forget")
     assert forget["confirm"] and forget["on"] == CONVERSATION and forget["tone"] == "danger"
     assert q.act("forget", record=conversation).ok
     assert not q.list(CONVERSATION)
-    # The greeting has no X: there is nothing to delete yet.
-    assert "close" not in q.view("chat").find("conversation")[0]
 
 
 def test_building_a_quill_makes_one_of_the_persons_own(q, claude):
