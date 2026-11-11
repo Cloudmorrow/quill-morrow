@@ -80,7 +80,7 @@ Keep it quick: list what you need, filter on indexed fields
 | `image(record=…)` or `image("https://…")` | a picture: a file record, or an https address |
 | `table(records, columns=[…], actions=[…], open=True)` | records, a row each; `actions` are action ids pressed per row |
 | `cards(records, title=, subtitle=, body=, badge=)` | records, a card each (field names) |
-| `rows(records, title=, subtitle=, badge=, go=, param=, current=, search=, group=)` | records as the app's list rows, the open one lit: the list beside what is open in it (Notes' list); `search` a search field over them, `group` a datetime field for the headings Today, Yesterday, Last 7 Days, Last 30 Days, month, year (Docs' list; give the rows newest first); put the rows in `split(side, main, fold=True)` for the button that folds the list away |
+| `rows(records, title=, subtitle=, badge=, go=, param=, current=, search=, group=, close=)` | records as the app's list rows, the open one lit: the list beside what is open in it (Notes' list); `search` a search field over them, `group` a datetime field for the headings Today, Yesterday, Last 7 Days, Last 30 Days, month, year (Docs' list; give the rows newest first); put the rows in `split(side, main, fold=True)` for the button that folds the list away; `close` an action with a `confirm`, run by a little X at each row's end |
 | `gallery(records, title=, subtitle=, badge=, stars=, rate=, actions=[…])` | files as picture tiles (a video's picture is a frame of it); `stars` names a 0–5 field drawn as stars, and pressing one runs the `rate` action with `stars=` |
 | `lanes(records, field=, title=)` | cards in columns by an enum field; dragging moves them |
 | `month(records, date=, title=)` | records on a month |
