@@ -238,9 +238,11 @@ right, the other side's on the left, a box on the floor that runs `ask`
 with what is typed; `close` the action an X in the corner runs on `record`,
 its `confirm` asked first), `table(records, columns=, actions=, go=, param=)`, `cards(records,
 title=, …, go=, param=)`, `rows(records, title=, subtitle=, badge=, go=,
-param=, current=)` (a row, a card or a list row opens its sheet, or with `go` a
+param=, current=, search=, group=)` (a row, a card or a list row opens its sheet, or with `go` a
 screen of the Quill's own, the record's id as `param`; `rows` are the app's
-own list rows, the open one lit),
+own list rows, the open one lit, `search` a search field over them, `group` a
+datetime field for the headings Today, Yesterday, Last 7 Days, Last 30 Days,
+month, year, the rows given newest first),
 `gallery(records, title=, subtitle=, badge=, stars=, rate=, actions=)` (files
 as picture tiles with five stars; a star runs `rate` with `stars=`),
 `lanes(records, field=, title=)`, `month(records, date=, title=)`. Every
