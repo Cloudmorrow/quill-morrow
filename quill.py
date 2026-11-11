@@ -515,7 +515,8 @@ def one_conversation(ctx, conversation_id, settings):
         return ui.stack(ui.empty("That conversation is gone."), ui.button("Back", go="chat"))
     missing = connected_words(ctx, settings)
     lines = [line_of(m) for m in messages_of(ctx, conversation)]
-    # Rename and Delete are the conversation's own actions: on its row's menu and its sheet.
+    # Rename and Delete are the conversation's own actions: on its row's menu
+    # and its sheet; Delete is the X in the corner too, asked first.
     return ui.stack(
         ui.text(str(conversation["title"]), style="subtitle"),
         ui.conversation(
@@ -528,6 +529,7 @@ def one_conversation(ctx, conversation_id, settings):
             name="Morrow",
             ask=None if missing else "ask",
             record=conversation,
+            close="forget",
             empty=missing or None,
             placeholder="Message Morrow",
             hint=None if missing else doing_words(ctx),
