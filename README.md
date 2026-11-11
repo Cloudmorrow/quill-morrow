@@ -7,7 +7,7 @@ Claude once, for everybody.
 A [Quill](https://github.com/Cloudmorrow/cloudmorrow/blob/main/docs/QUILLS.md)
 for Cloudmorrow: install it from the Quill Catalog, or from this repository
 with `cm quill add --source https://github.com/Cloudmorrow/quill-morrow --ref v1.2.0`.
-It needs Cloudmorrow 0.81.0 or later on the server (an assistant's tools
+It needs Cloudmorrow 0.82.0 or later on the server (an assistant's tools
 for a Quill's code arrived in 0.76.0; the conversation, the switch and the
 list it is drawn with, in 0.80.0 and 0.81.0).
 
@@ -24,8 +24,9 @@ written down, Morrow looks at what it needs and answers, and the answer is
 written down beside yours with what it looked at — *Looked at:
 list_records task where lane=doing* — so every answer says where it came
 from. Conversations are yours alone, sealed at rest like every record, kept
-until you delete them (a conversation's row renames or deletes it, from
-its menu or its sheet).
+until you delete them: the X in the top right corner of a conversation
+deletes it, after asking, and its row renames or deletes it from its menu
+or its sheet.
 
 **It reads what you can read, as you.** Morrow has what an assistant of
 yours over MCP has: the record tools over every datamodel your circles

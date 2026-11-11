@@ -87,7 +87,7 @@ Keep it quick: list what you need, filter on indexed fields
 | `field(record, name, edit=True)` | one field of one record, editable in place |
 | `form(action, values=…)` | an action's form, drawn in place |
 | `toggle(label, action=, on=, field=, hint=)` | a setting as a switch: flipping it runs the action at once with `field` set to the new state |
-| `conversation(records, body=, mine=, ask=, record=, name=, at=, note=, failed=, empty=, placeholder=, hint=, backdrop=)` | a chat: the person's lines (`mine`, a bool) on the right, the other side's (`name`) on the left; the box on the floor runs `ask` with what is typed (its first text field), enter sends |
+| `conversation(records, body=, mine=, ask=, record=, name=, at=, note=, failed=, empty=, placeholder=, hint=, backdrop=, close=)` | a chat: the person's lines (`mine`, a bool) on the right, the other side's (`name`) on the left; the box on the floor runs `ask` with what is typed (its first text field), enter sends; `close` is the X in the corner, an action on `record` with a `confirm` |
 | `button(label, action=… \| open=record \| go=screen, tone=)` | does one thing |
 | `menu(label, *buttons)` | several things behind one button |
 
@@ -162,7 +162,10 @@ the action the box under the lines runs with what is typed, on `record`.
 What was sent is shown at once, with the other side thinking, until the
 action is done and the view is drawn again, so a turn that takes a while
 (give the action a `timeout`) reads as a chat does. `empty` is the greeting
-while there is nothing; `hint` a small line under the box.
+while there is nothing; `hint` a small line under the box. `close` names the
+action an X in the top right corner runs on `record` — the one that deletes
+the conversation — and that action's `confirm` ("Delete this conversation?")
+is asked on the page first; never a conversation without a way out of it.
 
 ## Check it
 
