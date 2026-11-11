@@ -7,7 +7,7 @@ Claude once, for everybody.
 A [Quill](https://github.com/Cloudmorrow/cloudmorrow/blob/main/docs/QUILLS.md)
 for Cloudmorrow: install it from the Quill Catalog, or from this repository
 with `cm quill add --source https://github.com/Cloudmorrow/quill-morrow --ref v1.2.0`.
-It needs Cloudmorrow 0.87.0 or later on the server (an assistant's tools
+It needs Cloudmorrow 0.88.0 or later on the server (an assistant's tools
 for a Quill's code arrived in 0.76.0; the conversation, the switch and the
 list it is drawn with, in 0.80.0 and 0.81.0).
 
@@ -19,7 +19,8 @@ Today, Yesterday, Last 7 Days and so on, and a button at the top of the
 list that folds it away on a computer and brings it back), the open one on
 the right with the hedgehog faintly behind it, what you said in a bubble on your side and
 Morrow's answer on the other, the box to write in on the floor. Enter
-sends; what you said shows at once while Morrow thinks. The pen beside the
+sends; what you said shows at once while Morrow thinks, and the answer
+appears word by word as Claude says it. The pen beside the
 title clears the screen for a new conversation; the old one stays in the
 list. What you say is
 written down, Morrow looks at what it needs and answers, and the answer is

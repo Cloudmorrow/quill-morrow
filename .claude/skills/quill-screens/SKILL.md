@@ -166,6 +166,10 @@ while there is nothing; `hint` a small line under the box. `close` names the
 action an X in the top right corner runs on `record` — the one that deletes
 the conversation — and that action's `confirm` ("Delete this conversation?")
 is asked on the page first; never a conversation without a way out of it.
+A turn that takes a while says what it has so far with `ctx.progress(text)`
+— the words a model has said up to now, read with `ctx.fetch(..., stream=True)`
+and its `.events()` — and the web draws them in the other side's line as
+they come, until the action is done and the view drawn again.
 
 ## Check it
 

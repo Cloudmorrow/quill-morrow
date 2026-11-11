@@ -156,26 +156,34 @@ def brief(name, arguments):
 
 
 # -- Claude ----------------------------------------------------------------------------
-def claude(ctx, key, body, timeout):
-    """One request to the Messages API: the parsed answer, or MorrowError in words."""
+def claude(ctx, key, body, timeout, say=None):
+    """One request to the Messages API, read as it is said: the answer assembled
+    from its stream of events, or MorrowError in words. *say* hears the text
+    so far each time more of it has come, to be shown while Claude writes."""
     try:
         answer = ctx.fetch(
             API,
             method="POST",
             headers={"x-api-key": key, "anthropic-version": API_VERSION, "anthropic-beta": BETAS},
-            json=body,
+            json={**body, "stream": True},
             timeout=timeout,
+            stream=True,
         )
     except (Invalid, Refused) as exc:
         raise MorrowError(f"Claude could not be reached: {exc}") from exc
+    with answer:
+        if answer.ok:
+            try:
+                return assembled(answer.events(), say)
+            except (Invalid, Refused) as exc:
+                raise MorrowError(f"Claude broke off mid-answer: {exc}") from exc
+        words = answer.text
     try:
-        data = answer.json()
+        data = json.loads(words or "{}")
     except ValueError:
         data = {}
-    if answer.ok and isinstance(data, dict) and data.get("type") == "message":
-        return data
     detail = (data.get("error") or {}) if isinstance(data, dict) else {}
-    message = str(detail.get("message") or answer.text[:200] or "no answer")
+    message = str(detail.get("message") or words[:200] or "no answer")
     kind = str(detail.get("type") or "")
     if answer.status == 401 or kind == "authentication_error":
         raise MorrowError(f"Anthropic did not accept the key: {message}. Connect Claude again under {SETTINGS_ARE}.")
@@ -188,6 +196,60 @@ def claude(ctx, key, body, timeout):
     if answer.status == 400 and "model" in message.lower():
         raise MorrowError(f"Anthropic does not know the model: {message}. Pick another under {SETTINGS_ARE}.")
     raise MorrowError(f"Anthropic answered {answer.status}: {message}")
+
+
+def assembled(events, say=None):
+    """The message a stream of Messages API events adds up to: the blocks in
+    order (text, tool_use with its input, thinking with its signature, a
+    fallback), the stop reason from the last delta. *say* hears the text so
+    far on every piece of it."""
+    message = {"type": "message", "content": [], "stop_reason": None}
+    blocks, partial = [], {}
+    for event in events:
+        kind = event["event"]
+        try:
+            data = json.loads(event["data"] or "{}")
+        except ValueError:
+            continue
+        if kind == "message_start":
+            message.update({k: v for k, v in (data.get("message") or {}).items() if k != "content"})
+        elif kind == "content_block_start":
+            blocks.append(dict(data.get("content_block") or {}))
+            partial[len(blocks) - 1] = ""
+        elif kind == "content_block_delta":
+            i = int(data.get("index", len(blocks) - 1))
+            delta = data.get("delta") or {}
+            if i < 0 or i >= len(blocks):
+                continue
+            block, piece = blocks[i], str(delta.get("type") or "")
+            if piece == "text_delta":
+                block["text"] = str(block.get("text") or "") + str(delta.get("text") or "")
+                if say is not None:
+                    say(text_of(blocks))
+            elif piece == "input_json_delta":
+                partial[i] = partial.get(i, "") + str(delta.get("partial_json") or "")
+            elif piece == "thinking_delta":
+                block["thinking"] = str(block.get("thinking") or "") + str(delta.get("thinking") or "")
+            elif piece == "signature_delta":
+                block["signature"] = str(delta.get("signature") or "")
+        elif kind == "content_block_stop":
+            i = int(data.get("index", len(blocks) - 1))
+            if 0 <= i < len(blocks) and blocks[i].get("type") == "tool_use" and partial.get(i):
+                try:
+                    blocks[i]["input"] = json.loads(partial[i])
+                except ValueError:
+                    blocks[i]["input"] = {}
+        elif kind == "message_delta":
+            message.update(dict(data.get("delta") or {}))
+        elif kind == "error":
+            detail = data.get("error") or {}
+            if str(detail.get("type") or "") == "overloaded_error":
+                raise MorrowError("Anthropic is overloaded; try again in a moment")
+            raise MorrowError(f"Claude broke off: {detail.get('message') or 'an error in the stream'}")
+        elif kind == "message_stop":
+            break
+    message["content"] = blocks
+    return message
 
 
 def say_hi(ctx, key, model):
@@ -366,13 +428,18 @@ def turn(ctx, conversation, text):
     }
     started = time.monotonic()
     looked, said, status = [], [], "said"
+
+    def say(words):
+        # What there is so far, shown where the question was asked while the rest comes.
+        ctx.progress("\n\n".join(s for s in [*said, words] if s))
+
     try:
         for _round in range(ROUNDS):
             left = TURN_BUDGET - (time.monotonic() - started)
             if left < 10:
                 status = "cut"
                 break
-            data = claude(ctx, key, body, min(REQUEST_TIMEOUT, left))
+            data = claude(ctx, key, body, min(REQUEST_TIMEOUT, left), say)
             content = data.get("content") or []
             if text_of(content):
                 said.append(text_of(content))
